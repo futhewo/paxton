@@ -122,8 +122,8 @@ class Memory:
             return ""
 
         # Choose the first element
-        fu = random.randint(0, self.charactersTotal - 1)
-        value = dictChoice(fu, self.characters)
+        fu = random.randint(0, self.positionsTotal[0] - 1)
+        value = dictChoice(fu, self.positions[0])
 
         # Choose what remains
         for i in range(size - 1):
