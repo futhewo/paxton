@@ -117,10 +117,6 @@ class Memory:
         # Choose size
         fu = random.randint(0, self.sizesTotal - 1)
         size = dictChoice(fu, self.sizes)
-        print(fu)
-        print(size)
-        print(self.sizes)
-
         assert(size >= 0)
         if size == 0:
             return ""
@@ -128,7 +124,6 @@ class Memory:
         # Choose the first element
         fu = random.randint(0, self.charactersTotal - 1)
         value = dictChoice(fu, self.characters)
-        print(self.characters)
 
         # Choose what remains
         for i in range(size - 1):
