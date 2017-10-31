@@ -5,6 +5,8 @@
 # Imports #################################################
 import random
 import sys
+from optparse import OptionParser
+
 
 
 # Data structure ##########################################
@@ -112,8 +114,6 @@ class Memory:
 
     # Production ==========================================
     def produce(self, separator="\n"):
-        random.seed(1)
-        
         # Choose size
         fu = random.randint(0, self.sizesTotal - 1)
         size = dictChoice(fu, self.sizes)
@@ -165,16 +165,23 @@ def dictChoice(invalue, dictionary):
 
 
 def start():
-    usage = "Usage: {0} <file>".format(sys.argv[0])
+    usage = "Usage: {0} [options] <file>".format(sys.argv[0])
+    parser = OptionParser(usage=usage)
 
-    if len(sys.argv) != 2:
+    parser.add_option("-n", "--number", type="int",  dest="number", default="1", help="Choose How many elements you want to generate.", metavar="number")
+    (options, args) = parser.parse_args()
+
+    if len(sys.argv) < 2:
         print(usage)
     else:
         mem = Memory()
-        f = open(sys.argv[1], 'r')
+        f = open(sys.argv[-1], 'r')
         data = f.read()
         mem.parse(data)
-        print(mem.produce())
+
+        for i in range(options.number):
+            print(mem.produce())
+
 
 if __name__ == "__main__":
     start()
