@@ -6,6 +6,7 @@
 import random
 import sys
 from optparse import OptionParser
+import json
 
 
 
@@ -17,6 +18,7 @@ defaultStrategy = [10, 30, 60]
 # Data structure ##########################################
 class Memory:
     def __init__(self, strategy=defaultStrategy):
+        # Strategy memory
         self.strategy = strategy
         self.strategyTotal = self.strategy[0] + self.strategy[1] + self.strategy[2]
 
@@ -129,7 +131,7 @@ class Memory:
 
         # Choose the size
         fu = random.randint(0, self.sizesTotal - 1)
-        size = dictChoice(fu, self.sizes)
+        size = int(dictChoice(fu, self.sizes))
         assert(size >= 0)
         if size == 0:
             return ""
@@ -168,11 +170,43 @@ class Memory:
 
     # Save/restore ========================================
     def save(self, filename):
-        pass
+        """
+            Save the object parameters in a json formatted file.
+        """
+        dataStructure = dict()
+        dataStructure["strategy"] = self.strategy
+        dataStructure["strategyTotal"] = self.strategyTotal
+        dataStructure["characters"] = self.characters
+        dataStructure["charactersTotal"] = self.charactersTotal
+        dataStructure["sizes"] = self.sizes
+        dataStructure["sizesTotal"] = self.sizesTotal
+        dataStructure["maxSize"] = self.maxSize
+        dataStructure["positions"] = self.positions
+        dataStructure["positionsTotal"] = self.positionsTotal
+        dataStructure["twochains"] = self.twochains
+
+        with open(filename, 'w') as f:
+            json.dump(dataStructure, f, indent=4)
 
 
     def restore(self, filename):
-        pass
+        """
+            Restore the object parameters from a json formatted file.
+        """
+        dataStructure = dict()
+        with open(filename, 'r') as f:
+            dataStructure = json.load(f)
+
+        self.strategy = dataStructure["strategy"]
+        self.strategyTotal = dataStructure["strategyTotal"]
+        self.characters = dataStructure["characters"]
+        self.charactersTotal = dataStructure["charactersTotal"]
+        self.sizes = dataStructure["sizes"]
+        self.sizesTotal = dataStructure["sizesTotal"]
+        self.maxSize = dataStructure["maxSize"]
+        self.positions = dataStructure["positions"]
+        self.positionsTotal = dataStructure["positionsTotal"]
+        self.twochains = dataStructure["twochains"]
 
 
 
@@ -215,23 +249,42 @@ def start():
     usage = "Usage: {0} [options] <file>".format(sys.argv[0])
     parser = OptionParser(usage=usage)
 
-    parser.add_option("-n", "--number", type="int",  dest="number", default="1", help="Choose How many elements you want to generate.", metavar="number")
+    # Global options
+    parser.add_option("-a", "--analyze", type="string",  dest="analyzedFile", default="", help="Analyze the given file.", metavar="analyzedFile")
+    parser.add_option("-x", "--produce", type="int",  dest="producedNumber", default="0", help="Produce a given number of elements.", metavar="producedNumber")
+
+    # Save/restore
+    parser.add_option("-s", "--save", type="string",  dest="saveFile", default="", help="Save the object into the given file.", metavar="saveFile")
+    parser.add_option("-r", "--restore", type="string",  dest="restoredFile", default="", help="Restore the results of a previous analysis from the given file.", metavar="restoredFile")
+
+    # Tweaking
     parser.add_option("-g", "--global", type="int",  dest="globalStrategy", default=str(defaultStrategy[0]), help="Ponderation of the strategy that generates characters based on global stats of the characters.", metavar="globalStrategy")
     parser.add_option("-p", "--position", type="int",  dest="positionStrategy", default=str(defaultStrategy[1]), help="Ponderation of the strategy that generates characters based on the position.", metavar="positionStrategy")
     parser.add_option("-t", "--twochain", type="int",  dest="twochainStrategy", default=str(defaultStrategy[2]), help="Ponderation of the strategy that generates characters based on the previous character generated.", metavar="twochainStrategy")
     (options, args) = parser.parse_args()
 
-    if len(sys.argv) < 2:
-        print(usage)
-    else:
-        strategy = [options.globalStrategy, options.positionStrategy, options.twochainStrategy]
-        mem = Memory(strategy)
-        f = open(sys.argv[-1], 'r')
-        data = f.read()
-        mem.parse(data)
 
-        for i in range(options.number):
-            print(mem.produce())
+    strategy = [options.globalStrategy, options.positionStrategy, options.twochainStrategy]
+    mem = Memory(strategy)
+    if options.restoredFile != "":
+        mem.restore(options.restoredFile)
+
+    if options.analyzedFile != "":
+        if options.restoredFile != "":
+            log("A model has already been restored. It is now discarded in profit of the newly analyzed model.")
+        with open(options.analyzedFile, 'r') as f:
+            data = f.read()
+            mem.parse(data)
+
+    if options.saveFile != "":
+        mem.save(options.saveFile)
+
+    if options.restoredFile == "" and options.analyzedFile == "":
+        log("No model has been loaded, aborting.")
+        exit(1)
+
+    for i in range(options.producedNumber):
+        print(mem.produce())
 
 
 if __name__ == "__main__":
