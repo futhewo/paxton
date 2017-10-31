@@ -9,20 +9,32 @@ from optparse import OptionParser
 
 
 
+# Init ####################################################
+defaultStrategy = [10, 30, 60]
+
+
+
 # Data structure ##########################################
 class Memory:
-    def __init__(self):
+    def __init__(self, strategy=defaultStrategy):
+        self.strategy = strategy
+        self.strategyTotal = self.strategy[0] + self.strategy[1] + self.strategy[2]
+
+        # Characters memory
         self.characters = dict()
         self.charactersTotal = 0
 
+        # Sizes memory
         self.sizes = dict()
         self.sizesTotal = 0
         self.maxSize = 0
 
+        # Positions memory
         # list of dict(), one for each position
         self.positions = []
         self.positionsTotal = []
 
+        # Twochains memory
         # a dict of [total, dict()]
         self.twochains = dict()
 
@@ -114,21 +126,43 @@ class Memory:
 
     # Production ==========================================
     def produce(self, separator="\n"):
-        # Choose size
+
+        # Choose the size
         fu = random.randint(0, self.sizesTotal - 1)
         size = dictChoice(fu, self.sizes)
         assert(size >= 0)
         if size == 0:
             return ""
 
-        # Choose the first element
+        # Choose the first element among all the classical first elements.
         fu = random.randint(0, self.positionsTotal[0] - 1)
         value = dictChoice(fu, self.positions[0])
 
         # Choose what remains
-        for i in range(size - 1):
-            fu = random.randint(0, self.charactersTotal - 1)
-            value += dictChoice(fu, self.characters)
+        for i in range(1, size - 1):
+            fu = random.randint(0, self.strategyTotal - 1)
+            strategy = listChoice(fu, self.strategy)
+
+            # Strategy 0: among all characters
+            if strategy == 0:
+                fu = random.randint(0, self.charactersTotal - 1)
+                value += dictChoice(fu, self.characters)
+
+            # Strategy 1: according to the position
+            elif strategy == 1:
+                fu = random.randint(0, self.positionsTotal[i] - 1)
+                value += dictChoice(fu, self.positions[i])
+
+            # Strategy 2: according to the previoux character
+            elif strategy == 2:
+                fu = random.randint(0, self.twochains[value[-1]][0] - 1)
+                char = dictChoice(fu, self.twochains[value[-1]][1])
+                if char == separator:
+                    # Use default strategy.
+                    fu = random.randint(0, self.charactersTotal - 1)
+                    value += dictChoice(fu, self.characters)
+                else:
+                    value += char
 
         return value
 
@@ -163,18 +197,35 @@ def dictChoice(invalue, dictionary):
 
     raise "Error: the value asked is out of the dictionary."
 
+def listChoice(invalue, inlist):
+    """
+        Consume the inValue and returns the list element in which it ends.
+    """
+    value = invalue
+    for i in range(len(inlist)):
+        value -= inlist[i]
+        if value < 0:
+            return i
 
+    raise "Error: the value asked is out of the list."
+
+
+# Maint ###################################################
 def start():
     usage = "Usage: {0} [options] <file>".format(sys.argv[0])
     parser = OptionParser(usage=usage)
 
     parser.add_option("-n", "--number", type="int",  dest="number", default="1", help="Choose How many elements you want to generate.", metavar="number")
+    parser.add_option("-g", "--global", type="int",  dest="globalStrategy", default=str(defaultStrategy[0]), help="Ponderation of the strategy that generates characters based on global stats of the characters.", metavar="globalStrategy")
+    parser.add_option("-p", "--position", type="int",  dest="positionStrategy", default=str(defaultStrategy[1]), help="Ponderation of the strategy that generates characters based on the position.", metavar="positionStrategy")
+    parser.add_option("-t", "--twochain", type="int",  dest="twochainStrategy", default=str(defaultStrategy[2]), help="Ponderation of the strategy that generates characters based on the previous character generated.", metavar="twochainStrategy")
     (options, args) = parser.parse_args()
 
     if len(sys.argv) < 2:
         print(usage)
     else:
-        mem = Memory()
+        strategy = [options.globalStrategy, options.positionStrategy, options.twochainStrategy]
+        mem = Memory(strategy)
         f = open(sys.argv[-1], 'r')
         data = f.read()
         mem.parse(data)
