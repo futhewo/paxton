@@ -1,0 +1,9 @@
+# Ignore pyc files
+*.pyc
+
+# Ignore vim swp files
+*.swp
+
+# Ignore the local TODO
+TODO
+
