@@ -281,7 +281,7 @@ def listChoice(invalue, inlist):
 
 # Maint ###################################################
 def start():
-    usage = "Usage: {0} [options] <file>".format(sys.argv[0])
+    usage = "Usage: {0} [options]".format(sys.argv[0])
     parser = OptionParser(usage=usage)
 
     # Global options
