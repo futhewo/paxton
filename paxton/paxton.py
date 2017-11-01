@@ -17,37 +17,50 @@ defaultStrategy = [10, 30, 60]
 
 # Data structure ##########################################
 class Memory:
+    """
+        Contains all the information infers from the input file.
+    """
+
     def __init__(self, strategy=defaultStrategy):
-        # Strategy memory
+        """
+            Set the strategy to the given value and init all structures.
+        """
+        # Strategy memory: a list of 3 ([global, position, twochain]) ponderating each one of these elements.
         self.strategy = strategy
         self.strategyTotal = self.strategy[0] + self.strategy[1] + self.strategy[2]
 
-        # Characters memory
+        # Characters memory: count the occurences of any character in the whole file.
         self.characters = dict()
         self.charactersTotal = 0
 
-        # Sizes memory
+        # Sizes memory: count the occurrences of any size in the whole file.
         self.sizes = dict()
         self.sizesTotal = 0
         self.maxSize = 0
 
-        # Positions memory
-        # list of dict(), one for each position
+        # Positions memory: count the occurences of any character at any given position.
+        # list of dict(), one dict() of characters for each position.
         self.positions = []
         self.positionsTotal = []
 
-        # Twochains memory
-        # a dict of [total, dict()]
+        # Twochains memory: count the occurences of any character after any other character.
+        # a dict of [total, dict()], keys of the first dict are (n-1) characters, total is the sum of characters counted after (n-1) ; dict() contains occurences of n characters.
         self.twochains = dict()
 
 
-    def setStrategy(self, part, strategyPart):
+    def setStrategyPart(self, part, strategyPart):
+        """
+            Set one of the strategy, identified as part with the value strategyPart.
+        """
         self.strategyTotal += strategyPart - self.strategy[part]
         self.strategy[part] = strategyPart
 
 
     # Parsing =============================================
     def parse(self, data, separator="\n"):
+        """
+            Launch all parsers on the data.
+        """
         self.parseCharacters(data, separator)
         self.parseSizes(data, separator)
         self.parsePositions(data, self.maxSize, separator)
@@ -55,6 +68,9 @@ class Memory:
  
 
     def parseCharacters(self, data, separator="\n"):
+        """
+            Count the occurences of all characters.
+        """
         log("Beginning parsing characters.")
 
         self.charactersTotal = len(data)
@@ -71,6 +87,9 @@ class Memory:
 
 
     def parseSizes(self, data, separator="\n"):
+        """
+            Count the occurences of all sizes of all subelements. The separator is used in order to split the input into subelements.
+        """
         log("Beginning parsing sizes.")
 
         datas = data.split(separator)
@@ -86,6 +105,9 @@ class Memory:
 
 
     def parsePositions(self, data, maxSize, separator="\n"):
+        """
+            Count the occurences of all characters at any position in a subelement. The separator is used to split the input into subelements.
+        """
         log("Beginning parsing positions.")
 
         datas = data.split(separator)
@@ -105,6 +127,9 @@ class Memory:
 
 
     def parseTwochains(self, data, separator="\n"):
+        """
+            Count the occurences of one character after another one.
+        """
         log("Beginning parsing 2-chains.")
 
         # The very first character is assumed to have followed a separator.
@@ -133,7 +158,9 @@ class Memory:
 
     # Production ==========================================
     def produce(self, separator="\n"):
-
+        """
+            Produce an output from the model and following the strategy.
+        """
         # Choose the size
         fu = random.randint(0, self.sizesTotal - 1)
         size = int(dictChoice(fu, self.sizes))
@@ -173,6 +200,7 @@ class Memory:
 
         return value
 
+
     # Save/restore ========================================
     def save(self, filename):
         """
@@ -192,6 +220,7 @@ class Memory:
 
         with open(filename, 'w') as f:
             json.dump(dataStructure, f, indent=4)
+            log("Model saved.")
 
 
     def restore(self, filename):
@@ -202,16 +231,17 @@ class Memory:
         with open(filename, 'r') as f:
             dataStructure = json.load(f)
 
-        self.strategy = dataStructure["strategy"]
-        self.strategyTotal = dataStructure["strategyTotal"]
-        self.characters = dataStructure["characters"]
-        self.charactersTotal = dataStructure["charactersTotal"]
-        self.sizes = dataStructure["sizes"]
-        self.sizesTotal = dataStructure["sizesTotal"]
-        self.maxSize = dataStructure["maxSize"]
-        self.positions = dataStructure["positions"]
-        self.positionsTotal = dataStructure["positionsTotal"]
-        self.twochains = dataStructure["twochains"]
+            self.strategy = dataStructure["strategy"]
+            self.strategyTotal = dataStructure["strategyTotal"]
+            self.characters = dataStructure["characters"]
+            self.charactersTotal = dataStructure["charactersTotal"]
+            self.sizes = dataStructure["sizes"]
+            self.sizesTotal = dataStructure["sizesTotal"]
+            self.maxSize = dataStructure["maxSize"]
+            self.positions = dataStructure["positions"]
+            self.positionsTotal = dataStructure["positionsTotal"]
+            self.twochains = dataStructure["twochains"]
+            log("Model loaded.")
 
 
 
@@ -290,11 +320,11 @@ def start():
 
     # Set the strategy at the end in order to override the one given by the eventual restoration.
     if options.globalStrategy != -1:
-        mem.setStrategy(0, options.globalStrategy)
+        mem.setStrategyPart(0, options.globalStrategy)
     if options.positionStrategy != -1:
-        mem.setStrategy(1, options.positionStrategy)
+        mem.setStrategyPart(1, options.positionStrategy)
     if options.twochainStrategy != -1:
-        mem.setStrategy(2, options.twochainStrategy)
+        mem.setStrategyPart(2, options.twochainStrategy)
 
     log("Generating with strategy [g:{0}, p:{1}, t:{2}]".format(mem.strategy[0], mem.strategy[1], mem.strategy[2]))
     for i in range(options.producedNumber):
