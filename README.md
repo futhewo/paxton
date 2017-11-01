@@ -12,6 +12,12 @@ Several strategies are defined to generate look-a-like outputs:
 * twochain (-t): produce a character based on the previous character.
 Each time paxton has to produce a new character, he will choose randomly one of these strategies, then use it. The ponderations of these strategies can be changed with command line arguments.
 
+## Combination modes
+
+The previous strategies can be combined, according to a chosen combination mode:
+* none (-m0): no combination betwenn strategies, one strategy is selected according to the ponderation for each new character.
+* simple (-m1): combine the strategies and their ponderation before choosing a new character.
+
 ## Help
 
 Now, this is the help of paxton:
@@ -38,6 +44,10 @@ Options:
   -t twochainStrategy, --twochain=twochainStrategy
                         Ponderation of the strategy that generates characters
                         based on the previous character generated.
+  -m combinationMode, --mode=combinationMode
+                        The combination mode (0: no combination, 1: simple
+                        mode), determines how the different strategy are
+                        combined.
 ```
 
 ## Example
@@ -56,7 +66,7 @@ python3 paxton/paxton.py -x10 -r examples/englishNames/englishNames.json
 
 To analyze a file, set a fancy strategy and save the model:
 ```
-python3 paxton/paxton.py -g100 -p3 -t2000 -a examples/englishNames/englishNames.list -s /tmp/myModel.json
+python3 paxton/paxton.py -g50 -p300 -t2000 -m1 -a examples/englishNames/englishNames.list -s /tmp/myModel.json
 ```
 
 
