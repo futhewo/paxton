@@ -11,11 +11,14 @@ import json
 
 
 # Init ####################################################
-defaultStrategy = [10, 30, 60]
 
 # Combination modes:
 CM_NONE   = 0
 CM_SIMPLE = 1
+
+# Default values:
+defaultStrategy = [2, 20, 100]
+defaultMode     = CM_SIMPLE
 
 
 
@@ -36,7 +39,7 @@ class Memory:
         # The strategy combination mode. It can be:
         # CM_NONE : no combination, choose a random strategy for each new character
         # CM_SIMPLE : combine all strategies (conserving ponderations) to make a new dict and chose the new character in this dict.
-        self.combinationMode = CM_NONE
+        self.combinationMode = defaultMode
 
         # Characters memory: count the occurences of any character in the whole file.
         self.characters = dict()
