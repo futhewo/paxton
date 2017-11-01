@@ -13,6 +13,10 @@ import json
 # Init ####################################################
 defaultStrategy = [10, 30, 60]
 
+# Combination modes:
+CM_NONE   = 0
+CM_SIMPLE = 1
+
 
 
 # Data structure ##########################################
@@ -28,6 +32,11 @@ class Memory:
         # Strategy memory: a list of 3 ([global, position, twochain]) ponderating each one of these elements.
         self.strategy = strategy
         self.strategyTotal = self.strategy[0] + self.strategy[1] + self.strategy[2]
+
+        # The strategy combination mode. It can be:
+        # CM_NONE : no combination, choose a random strategy for each new character
+        # CM_SIMPLE : combine all strategies (conserving ponderations) to make a new dict and chose the new character in this dict.
+        self.combinationMode = CM_NONE
 
         # Characters memory: count the occurences of any character in the whole file.
         self.characters = dict()
@@ -168,37 +177,88 @@ class Memory:
         if size == 0:
             return ""
 
-        # Choose the first element among all the classical first elements.
-        fu = random.randint(0, self.positionsTotal[0] - 1)
-        value = dictChoice(fu, self.positions[0])
+        if self.combinationMode == CM_NONE:
+            # Choose the first element among all the classical first elements.
+            fu = random.randint(0, self.positionsTotal[0] - 1)
+            value = dictChoice(fu, self.positions[0])
 
-        # Choose what remains
-        for i in range(1, size - 1):
-            fu = random.randint(0, self.strategyTotal - 1)
-            strategy = listChoice(fu, self.strategy)
+            # Choose what remains
+            for i in range(1, size - 1):
+                fu = random.randint(0, self.strategyTotal - 1)
+                strategy = listChoice(fu, self.strategy)
 
-            # Strategy 0: among all characters
-            if strategy == 0:
-                fu = random.randint(0, self.charactersTotal - 1)
-                value += dictChoice(fu, self.characters)
-
-            # Strategy 1: according to the position
-            elif strategy == 1:
-                fu = random.randint(0, self.positionsTotal[i] - 1)
-                value += dictChoice(fu, self.positions[i])
-
-            # Strategy 2: according to the previoux character
-            elif strategy == 2:
-                fu = random.randint(0, self.twochains[value[-1]][0] - 1)
-                char = dictChoice(fu, self.twochains[value[-1]][1])
-                if char == separator:
-                    # Use default strategy.
+                # Strategy 0: among all characters
+                if strategy == 0:
                     fu = random.randint(0, self.charactersTotal - 1)
                     value += dictChoice(fu, self.characters)
-                else:
-                    value += char
 
-        return value
+                # Strategy 1: according to the position
+                elif strategy == 1:
+                    fu = random.randint(0, self.positionsTotal[i] - 1)
+                    value += dictChoice(fu, self.positions[i])
+
+                # Strategy 2: according to the previoux character
+                elif strategy == 2:
+                    fu = random.randint(0, self.twochains[value[-1]][0] - 1)
+                    char = dictChoice(fu, self.twochains[value[-1]][1])
+                    if char == separator:
+                        # Use default strategy.
+                        fu = random.randint(0, self.charactersTotal - 1)
+                        value += dictChoice(fu, self.characters)
+                    else:
+                        value += char
+
+            return value
+
+        elif self.combinationMode == CM_SIMPLE:
+            # Create a dict of possibilities for the next character.
+            value = ""
+
+            for i in range(size - 1):
+                nextCharDict = dict()
+                nextCharTotal = 0
+
+                # Characters
+                for key in self.characters.keys():
+                    # Copy the value and keep the ponderation.
+                    nextCharDict[key] = self.characters[key] * self.strategy[0]
+                nextCharTotal += self.charactersTotal * self.strategy[0]
+
+                # Positions
+                for key in self.positions[i].keys():
+                    if key in nextCharDict.keys():
+                        nextCharDict[key] += self.positions[i][key] * self.strategy[1]
+                    else:
+                        nextCharDict[key] = self.positions[i][key] * self.strategy[1]
+                nextCharTotal += self.positionsTotal[i] * self.strategy[1]
+
+                # Twochains
+                previousChar = ""
+                if i == 0:
+                    previousChar = separator
+                else:
+                    previousChar = value[-1]
+                nextCharTotal += self.twochains[previousChar][0] * self.strategy[2]
+
+                for key in self.twochains[previousChar][1].keys():
+                    if key == separator:
+                        nextCharTotal -= self.twochains[previousChar][1][key] * self.strategy[2]
+                        continue
+
+                    if key in nextCharDict.keys():
+                        nextCharDict[key] += self.twochains[previousChar][1][key] * self.strategy[2]
+                    else:
+                        nextCharDict[key] = self.twochains[previousChar][1][key] * self.strategy[2]
+
+                # Generation
+                fu = random.randint(0, nextCharTotal - 1)
+                value += dictChoice(fu, nextCharDict)
+
+            return value
+
+        else:
+            raise Exception("Wrong combination mode chosen.")
+
 
 
     # Save/restore ========================================
@@ -209,6 +269,7 @@ class Memory:
         dataStructure = dict()
         dataStructure["strategy"] = self.strategy
         dataStructure["strategyTotal"] = self.strategyTotal
+        dataStructure["combinationMode"] = self.combinationMode
         dataStructure["characters"] = self.characters
         dataStructure["charactersTotal"] = self.charactersTotal
         dataStructure["sizes"] = self.sizes
@@ -233,6 +294,7 @@ class Memory:
 
             self.strategy = dataStructure["strategy"]
             self.strategyTotal = dataStructure["strategyTotal"]
+            self.combinationMode = dataStructure["combinationMode"]
             self.characters = dataStructure["characters"]
             self.charactersTotal = dataStructure["charactersTotal"]
             self.sizes = dataStructure["sizes"]
@@ -264,7 +326,7 @@ def dictChoice(invalue, dictionary):
         if value < 0:
             return key
 
-    raise "Error: the value asked is out of the dictionary."
+    raise Exception("The value asked is out of the dictionary.")
 
 def listChoice(invalue, inlist):
     """
@@ -276,7 +338,7 @@ def listChoice(invalue, inlist):
         if value < 0:
             return i
 
-    raise "Error: the value asked is out of the list."
+    raise Exception("The value asked is out of the list.")
 
 
 # Maint ###################################################
@@ -296,6 +358,7 @@ def start():
     parser.add_option("-g", "--global", type="int",  dest="globalStrategy", default=-1, help="Ponderation of the strategy that generates characters based on global stats of the characters.", metavar="globalStrategy")
     parser.add_option("-p", "--position", type="int",  dest="positionStrategy", default=-1, help="Ponderation of the strategy that generates characters based on the position.", metavar="positionStrategy")
     parser.add_option("-t", "--twochain", type="int",  dest="twochainStrategy", default=-1, help="Ponderation of the strategy that generates characters based on the previous character generated.", metavar="twochainStrategy")
+    parser.add_option("-m", "--mode", type="int",  dest="combinationMode", default=-1, help="The combination mode (0: no combination, 1: simple mode), determines how the different strategy are combined.", metavar="combinationMode")
     (options, args) = parser.parse_args()
 
 
@@ -325,8 +388,10 @@ def start():
         mem.setStrategyPart(1, options.positionStrategy)
     if options.twochainStrategy != -1:
         mem.setStrategyPart(2, options.twochainStrategy)
+    if options.combinationMode != -1:
+        mem.combinationMode = options.combinationMode
 
-    log("Generating with strategy [g:{0}, p:{1}, t:{2}]".format(mem.strategy[0], mem.strategy[1], mem.strategy[2]))
+    log("Generating {0} outputs with strategy [g:{1}, p:{2}, t:{3}] and mode {4}.".format(options.producedNumber, mem.strategy[0], mem.strategy[1], mem.strategy[2], mem.combinationMode))
     for i in range(options.producedNumber):
         print(mem.produce())
 
