@@ -41,6 +41,11 @@ class Memory:
         self.twochains = dict()
 
 
+    def setStrategy(self, part, strategyPart):
+        self.strategyTotal += strategyPart - self.strategy[part]
+        self.strategy[part] = strategyPart
+
+
     # Parsing =============================================
     def parse(self, data, separator="\n"):
         self.parseCharacters(data, separator)
@@ -258,14 +263,14 @@ def start():
     parser.add_option("-r", "--restore", type="string",  dest="restoredFile", default="", help="Restore the results of a previous analysis from the given file.", metavar="restoredFile")
 
     # Tweaking
-    parser.add_option("-g", "--global", type="int",  dest="globalStrategy", default=str(defaultStrategy[0]), help="Ponderation of the strategy that generates characters based on global stats of the characters.", metavar="globalStrategy")
-    parser.add_option("-p", "--position", type="int",  dest="positionStrategy", default=str(defaultStrategy[1]), help="Ponderation of the strategy that generates characters based on the position.", metavar="positionStrategy")
-    parser.add_option("-t", "--twochain", type="int",  dest="twochainStrategy", default=str(defaultStrategy[2]), help="Ponderation of the strategy that generates characters based on the previous character generated.", metavar="twochainStrategy")
+    parser.add_option("-g", "--global", type="int",  dest="globalStrategy", default=-1, help="Ponderation of the strategy that generates characters based on global stats of the characters.", metavar="globalStrategy")
+    parser.add_option("-p", "--position", type="int",  dest="positionStrategy", default=-1, help="Ponderation of the strategy that generates characters based on the position.", metavar="positionStrategy")
+    parser.add_option("-t", "--twochain", type="int",  dest="twochainStrategy", default=-1, help="Ponderation of the strategy that generates characters based on the previous character generated.", metavar="twochainStrategy")
     (options, args) = parser.parse_args()
 
 
-    strategy = [options.globalStrategy, options.positionStrategy, options.twochainStrategy]
-    mem = Memory(strategy)
+
+    mem = Memory()
     if options.restoredFile != "":
         mem.restore(options.restoredFile)
 
@@ -283,6 +288,15 @@ def start():
         log("No model has been loaded, aborting.")
         exit(1)
 
+    # Set the strategy at the end in order to override the one given by the eventual restoration.
+    if options.globalStrategy != -1:
+        mem.setStrategy(0, options.globalStrategy)
+    if options.positionStrategy != -1:
+        mem.setStrategy(1, options.positionStrategy)
+    if options.twochainStrategy != -1:
+        mem.setStrategy(2, options.twochainStrategy)
+
+    log("Generating with strategy [g:{0}, p:{1}, t:{2}]".format(mem.strategy[0], mem.strategy[1], mem.strategy[2]))
     for i in range(options.producedNumber):
         print(mem.produce())
 
