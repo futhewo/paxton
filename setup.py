@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='paxton',
-      version='0.2',
+      version='0.3',
       description='A basic data structure learner and generator.',
       url='http://github.com/futhewo/paxton',
       author='FuzzTheWorld',
